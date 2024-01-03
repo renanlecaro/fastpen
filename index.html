@@ -19,7 +19,7 @@
 
       const editor = document.getElementById("editor");
       const preview = document.getElementById("preview");
-      editor.value = window.location.search?.slice(1) || defaultContent;
+      editor.value = window.location.search ? decodeURIComponent(window.location.search?.slice(1)) || defaultContent;
 
       function updatePreview() {
         preview.srcdoc = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>${editor.value}</body></html>`;
@@ -42,6 +42,7 @@
       body {
         margin: 0;
         padding: 0;
+        overflow: hidden;
       }
       * {
         box-sizing: border-box;
@@ -50,6 +51,7 @@
         display: flex;
         width: 100vw;
         height: 100vh;
+        overflow: hidden;
       }
       #editor {
         resize: horizontal;
@@ -62,12 +64,14 @@
         background: #333;
         color: white;
         font-family: monospace;
+        max-width: 80%;
       }
       #preview {
         flex-grow: 1;
         flex-shrink: 1;
         border: none;
         box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.1) inset;
+        overflow: hidden;
       }
     </style>
   </body>
