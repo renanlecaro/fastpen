@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fastpen : a client side only codepen alternative</title>
+  </head>
+
+  <body>
+    <div id="split">
+      <textarea id="editor"></textarea>
+      <iframe srcdoc="" id="preview"></iframe>
+    </div>
+    <script>
+      const defaultContent =
+        "<h1>Type some html</h1>\n" +
+        "<script>/*Some javascript*/</sc" +
+        "ript>\n<style>/*Or Css*/</style>";
+
+      const editor = document.getElementById("editor");
+      const preview = document.getElementById("preview");
+      editor.value = window.location.search?.slice(1) || defaultContent;
+
+      function updatePreview() {
+        preview.srcdoc = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>${editor.value}</body></html>`;
+        history.replaceState(
+          editor.value,
+          "",
+          "/?" + encodeURIComponent(editor.value),
+        );
+      }
+      updatePreview();
+      editor.addEventListener("keyup", updatePreview);
+      editor.addEventListener("change", updatePreview);
+
+      editor.style.width = (localStorage.getItem("ta-size") || "300") + "px";
+      editor.addEventListener("resize", () =>
+        localStorage.setItem("ta-size", editor.scrollWidth),
+      );
+    </script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      #split {
+        display: flex;
+        width: 100vw;
+        height: 100vh;
+      }
+      #editor {
+        resize: horizontal;
+        flex-grow: 0;
+        flex-shrink: 0;
+        box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.1) inset;
+        border: none;
+        padding: 20px;
+        line-height: 20px;
+        background: #333;
+        color: white;
+        font-family: monospace;
+      }
+      #preview {
+        flex-grow: 1;
+        flex-shrink: 1;
+        border: none;
+        box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.1) inset;
+      }
+    </style>
+  </body>
+</html>
