@@ -13,30 +13,114 @@
     </div>
     <script>
       const defaultContent =
-        "<h1>Type some html</h1>\n" +
-        "<script>/*Some javascript*/</sc" +
-        "ript>\n<style>/*Or Css*/</style>";
+        "<p>Add some html code here</p>\n\n" +
+        "<script>\n/*Maybe some javascript ? */\n\n</sc" +
+        "ript>\n<style>\n/*How about some css to make it look nice ? */\n\n</style>";
 
       const editor = document.getElementById("editor");
       const preview = document.getElementById("preview");
-      editor.value = window.location.search ? decodeURIComponent(window.location.search?.slice(1)) || defaultContent;
+
+
+      function onCodeChange() {
+      	updatePreview()
+		updateURL()
+      }
 
       function updatePreview() {
         preview.srcdoc = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>${editor.value}</body></html>`;
-        history.replaceState(
-          editor.value,
-          "",
-          "/?" + encodeURIComponent(editor.value),
-        );
-      }
-      updatePreview();
-      editor.addEventListener("keyup", updatePreview);
-      editor.addEventListener("change", updatePreview);
 
-      editor.style.width = (localStorage.getItem("ta-size") || "300") + "px";
-      editor.addEventListener("resize", () =>
-        localStorage.setItem("ta-size", editor.scrollWidth),
-      );
+      }
+ 
+      function updateURL() { 
+      	const uncompressed=editor.value
+      	compress(uncompressed).then(compressed=>{
+      		if(uncompressed==editor.value)
+	      		history.replaceState(
+	  	          compressed,
+	  	          "",
+	  	          "?src=" + encodeURIComponent(compressed),
+	  	        )
+	      	console.log(encodeURIComponent(uncompressed).length +' to '+encodeURIComponent(compressed).length)
+      	}) 
+      }
+
+      editor.addEventListener("keyup", onCodeChange);
+      editor.addEventListener("change", onCodeChange);
+
+      editor.style.width = (localStorage.getItem("ta-size") || window.innerWidth/2) + "px";
+  
+      new ResizeObserver(()=>localStorage.setItem("ta-size", editor.scrollWidth)).observe(editor);
+
+      async function compress(str) {
+	  // Convert the string to a byte stream.
+	  const stream = new Blob([str]).stream();
+
+	  // Create a compressed stream.
+	  const compressedStream = stream.pipeThrough(
+	    new CompressionStream("gzip")
+	  );
+
+	  // Read all the bytes from this stream.
+	  const chunks = [];
+	  for await (const chunk of compressedStream) {
+	    chunks.push(chunk);
+	  }
+
+	const u8= await concatUint8Arrays(chunks);
+	var b64encoded = btoa(String.fromCharCode.apply(null, u8));
+
+	return b64encoded
+
+	}
+
+
+	async function concatUint8Arrays(uint8arrays) {
+  const blob = new Blob(uint8arrays);
+  const buffer = await blob.arrayBuffer();
+  return new Uint8Array(buffer);
+}
+
+async function decompress(b64encoded) {
+  const compressedBytes = new Uint8Array(atob(b64encoded).split("").map(function(c) {
+    return c.charCodeAt(0); }));
+
+  // Convert the bytes to a stream.
+  const stream = new Blob([compressedBytes]).stream();
+
+  // Create a decompressed stream.
+  const decompressedStream = stream.pipeThrough(
+    new DecompressionStream("gzip")
+  );
+
+  // Read all the bytes from this stream.
+  const chunks = [];
+  for await (const chunk of decompressedStream) {
+    chunks.push(chunk);
+  }
+  const stringBytes = await concatUint8Arrays(chunks);
+
+  // Convert the bytes to a string.
+  return new TextDecoder().decode(stringBytes);
+}		
+      if(window.location.search){
+		editor.value = 'Decompressing...'
+		editor.disabled=true
+		const decoded=decodeURIComponent(window.location.search?.replace(/^\?src=/,'')) 
+		decompress(decoded).then(source=>{
+			editor.disabled=false
+			editor.value=source
+			updatePreview()
+		}, error=>{
+			editor.disabled=false
+			editor.value=error.message
+			updatePreview()
+			console.error(error)
+		})
+      }else{
+		editor.value = defaultContent
+      	updatePreview();
+      } 
+      
     </script>
     <style>
       body {
@@ -73,6 +157,7 @@
         box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.1) inset;
         overflow: hidden;
       }
+
     </style>
   </body>
 </html>
