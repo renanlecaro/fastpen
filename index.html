@@ -1,143 +1,305 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Fastpen : a client side only codepen alternative</title>
-  </head>
+        <link rel="icon"
+          href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☄️</text></svg>">
 
-  <body>
-    <div id="split">
-      <textarea id="editor"></textarea>
-      <iframe srcdoc="" id="preview"></iframe>
-    </div>
-    <script>
-      const defaultContent =
-        "<p>Add some html code here</p>\n\n" +
-        "<script>\n/*Maybe some javascript ? */\n\n</sc" +
-        "ript>\n<style>\n/*How about some css to make it look nice ? */\n\n</style>";
+</head>
 
-      const editor = document.getElementById("editor");
-      const preview = document.getElementById("preview");
+<body>
+<noscript>Sorry, this app needs javascript to work.</noscript>
+
+<input type="radio" name="viewing" id="see-code" value="code" checked/>
+<input type="radio" name="viewing" id="see-preview" value="preview"/>
+<nav>
+    <a href="/">Fastpen</a>
+    <label for="see-code">Code</label>
+    <label for="see-preview">Preview</label>
+</nav>
+<div id="split">
+    <textarea
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            aria-label="Code editor" id="editor">
+<article id="follows">
+    <h1>Welcome to fastpen</h1>
+
+    <p>Edit HTML code on the left, preview it on the right</p>
+    <p>Share the page address to show your work</p>
+    <p>Save your best code in your favorites</p>
+    <p>The editor is resizable.</p>
+    <p>Indent code with Tab / Shift Tab.</p>
+
+</article>
+
+<style>
+    body{
+overflow:hidden;
+        background:radial-gradient(#222, #000);
+        height:100vh;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        font-family: sans-serif;
+        color:#333;
+        perspective: 800px;
+        /* This is just css, no preprocessor is needed to nest rules in modern browsers*/
+
+        article{
+            position:relative;
+            z-index:1;
+            background:white;
+            max-width:500px;
+            padding:20px;
+            border-radius:4px;
+            h1{
+                text-align:center;
+                margin:0;
+            }
+        }
+    }
+</style>
+
+<script>
+if(!window.matchMedia('(prefers-reduced-motion: reduce)')?.matches){
+
+    const follows = document.getElementById("follows");
+
+    document.addEventListener('mousemove', event=>{
+        const angleX=(event.clientX-window.innerWidth/2)/window.innerWidth*20;
+        const angleY=(window.innerHeight/2-event.clientY)/window.innerHeight*20;
+        follows.style.transform='rotateY('+angleX+'deg) rotateX('+angleY+'deg)'
+    })
+
+    for(var i=0; i<200; i++){
+        const div= document.createElement("div");
+        div.className="shootingStar";
+        const i= document.createElement("i");
+        div.appendChild(i);
+        i.style.animation='shoot '+(500+Math.floor(Math.random()*1000))+'ms infinite ease-in';
+        i.style.animationDelay=Math.floor(Math.random()*1000)+'ms';
+        div.style.transform="rotate("+Math.random()*360+"deg)"
+        document.body.prepend(div)
+    }
+};
+
+</script>
 
 
-      function onCodeChange() {
-      	updatePreview()
-		updateURL()
-      }
-
-      function updatePreview() {
-        preview.srcdoc = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>${editor.value}</body></html>`;
-
-      }
- 
-      function updateURL() { 
-      	const uncompressed=editor.value
-      	compress(uncompressed).then(compressed=>{
-      		if(uncompressed==editor.value)
-	      		history.replaceState(
-	  	          compressed,
-	  	          "",
-	  	          "?src=" + encodeURIComponent(compressed),
-	  	        )
-	      	console.log(encodeURIComponent(uncompressed).length +' to '+encodeURIComponent(compressed).length)
-      	}) 
-      }
-
-      editor.addEventListener("keyup", onCodeChange);
-      editor.addEventListener("change", onCodeChange);
-
-      editor.style.width = (localStorage.getItem("ta-size") || window.innerWidth/2) + "px";
-  
-      new ResizeObserver(()=>localStorage.setItem("ta-size", editor.scrollWidth)).observe(editor);
-
-      async function compress(str) {
-	  // Convert the string to a byte stream.
-	  const stream = new Blob([str]).stream();
-
-	  // Create a compressed stream.
-	  const compressedStream = stream.pipeThrough(
-	    new CompressionStream("gzip")
-	  );
-
-	  // Read all the bytes from this stream.
-	  const chunks = [];
-	  for await (const chunk of compressedStream) {
-	    chunks.push(chunk);
-	  }
-
-	const u8= await concatUint8Arrays(chunks);
-	var b64encoded = btoa(String.fromCharCode.apply(null, u8));
-
-	return b64encoded
-
-	}
+<style>
+    .shootingStar {
+        transform-origin:top left;
+        left:50%;
+        top:50%;
+        position:absolute;
+        i{
+            background:white;
+            display:block;
+            width:10px;
+            height:10px;
+            animation: shoot 1s infinite ease-in;
+        }
+    }
+    @keyframes shoot{
+        0%{
+            transform:scale(20%);
+        }
+        100%{
+            transform:translate(200vw, 0);
+        }
+    }
+</style>
+    </textarea>
+    <iframe aria-label="Code preview" srcdoc="" id="preview"></iframe>
+</div>
+<script>
+    const editor = document.getElementById("editor");
+    const preview = document.getElementById("preview");
 
 
-	async function concatUint8Arrays(uint8arrays) {
-  const blob = new Blob(uint8arrays);
-  const buffer = await blob.arrayBuffer();
-  return new Uint8Array(buffer);
-}
+    function onCodeChange() {
+        updatePreview()
+        updateURL()
+    }
 
-async function decompress(b64encoded) {
-  const compressedBytes = new Uint8Array(atob(b64encoded).split("").map(function(c) {
-    return c.charCodeAt(0); }));
+    function updatePreview() {
+        const newCode=`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>${editor.value}</body></html>`;
 
-  // Convert the bytes to a stream.
-  const stream = new Blob([compressedBytes]).stream();
+        if(newCode!==preview.srcdoc) {
+            preview.srcdoc = newCode
+        }
+    }
 
-  // Create a decompressed stream.
-  const decompressedStream = stream.pipeThrough(
-    new DecompressionStream("gzip")
-  );
+    function updateURL() {
+        const uncompressed = editor.value
+        compress(uncompressed).then(compressed => {
+            if (uncompressed == editor.value) {
+                window.location.hash = '#' + encodeURIComponent(compressed)
+            }
+        })
+    }
 
-  // Read all the bytes from this stream.
-  const chunks = [];
-  for await (const chunk of decompressedStream) {
-    chunks.push(chunk);
-  }
-  const stringBytes = await concatUint8Arrays(chunks);
 
-  // Convert the bytes to a string.
-  return new TextDecoder().decode(stringBytes);
-}		
-      if(window.location.search){
-		editor.value = 'Decompressing...'
-		editor.disabled=true
-		const decoded=decodeURIComponent(window.location.search?.replace(/^\?src=/,'')) 
-		decompress(decoded).then(source=>{
-			editor.disabled=false
-			editor.value=source
-			updatePreview()
-		}, error=>{
-			editor.disabled=false
-			editor.value=error.message
-			updatePreview()
-			console.error(error)
-		})
-      }else{
-		editor.value = defaultContent
-      	updatePreview();
-      } 
-      
-    </script>
-    <style>
-      body {
+    editor.addEventListener("keyup", onCodeChange);
+    editor.addEventListener("change", onCodeChange);
+
+    editor.style.width = (localStorage.getItem("ta-size") || window.innerWidth / 2) + "px";
+
+    new ResizeObserver(() => localStorage.setItem("ta-size", editor.scrollWidth)).observe(editor);
+
+    async function compress(str) {
+        // Convert the string to a byte stream.
+        const stream = new Blob([str]).stream();
+
+        // Create a compressed stream.
+        const compressedStream = stream.pipeThrough(
+            new CompressionStream("gzip")
+        );
+
+        // Read all the bytes from this stream.
+        const chunks = [];
+        for await (const chunk of compressedStream) {
+            chunks.push(chunk);
+        }
+
+        const u8 = await concatUint8Arrays(chunks);
+        var b64encoded = btoa(String.fromCharCode.apply(null, u8));
+
+        return b64encoded
+
+    }
+
+
+    async function concatUint8Arrays(uint8arrays) {
+        const blob = new Blob(uint8arrays);
+        const buffer = await blob.arrayBuffer();
+        return new Uint8Array(buffer);
+    }
+
+    async function decompress(b64encoded) {
+        const compressedBytes = new Uint8Array(atob(b64encoded).split("").map(function (c) {
+            return c.charCodeAt(0);
+        }));
+
+        // Convert the bytes to a stream.
+        const stream = new Blob([compressedBytes]).stream();
+
+        // Create a decompressed stream.
+        const decompressedStream = stream.pipeThrough(
+            new DecompressionStream("gzip")
+        );
+
+        // Read all the bytes from this stream.
+        const chunks = [];
+        for await (const chunk of decompressedStream) {
+            chunks.push(chunk);
+        }
+        const stringBytes = await concatUint8Arrays(chunks);
+
+        // Convert the bytes to a string.
+        return new TextDecoder().decode(stringBytes);
+    }
+
+    if (window.location.hash) {
+        editor.value = 'Decompressing...'
+        editor.disabled = true
+        const decoded = decodeURIComponent(window.location.hash.slice(1))
+        decompress(decoded).then(source => {
+            editor.disabled = false
+            editor.value = source
+            updatePreview()
+        }, error => {
+            editor.disabled = false
+            editor.value = error.message
+            updatePreview()
+            console.error(error)
+        })
+    } else {
+        updatePreview();
+    }
+
+    // Tab support
+    function supportTabIndentation(textarea) {
+        const offsetToLineAndOffset = (lines, offset) => {
+            let line = 0
+            while (offset > lines[line].length && line < lines.length - 1) {
+                offset = offset - lines[line].length - 1
+                line++
+            }
+            return {line, offset}
+        }
+        const LineAndOffsetToOffset = (lines, line, offset) => {
+            for (let i = 0; i < line; i++)
+                offset += lines[i].length + 1
+
+            return offset
+        }
+
+        textarea.addEventListener('keydown', e => {
+            if (e.key == 'Tab') {
+                e.preventDefault()
+                const lines = e.target.value.split('\n')
+
+                const selection = [offsetToLineAndOffset(lines, textarea.selectionStart),
+                    offsetToLineAndOffset(lines, textarea.selectionEnd)]
+                for (var l = selection[0].line; l <= selection[1].line; l++) {
+                    const originalLength = lines[l].length
+                    if (e.shiftKey) {
+                        lines[l] = lines[l].replace(/^ {0,4}/, '')
+                    } else {
+                        lines[l] = '    ' + lines[l]
+                    }
+                    // How much the line moved
+                    const delta = lines[l].length - originalLength
+                    // Update the user selection if it's on this line
+                    selection.forEach((sel) => {
+                        if (sel.line == l) {
+                            sel.offset = Math.max(0, sel.offset + delta)
+                        }
+                    })
+                }
+                textarea.value = lines.join('\n')
+                textarea.selectionStart = LineAndOffsetToOffset(lines, selection[0].line, selection[0].offset)
+                textarea.selectionEnd = LineAndOffsetToOffset(lines, selection[1].line, selection[1].offset)
+            }
+        })
+    }
+
+    supportTabIndentation(document.getElementById('editor'))
+
+    // Disable ctrl S
+    document.addEventListener("keydown", event=>{
+        if(event.key=='s' && event.ctrlKey){
+            event.preventDefault()
+        }
+    })
+
+</script>
+
+<style>
+    body {
         margin: 0;
         padding: 0;
         overflow: hidden;
-      }
-      * {
+    }
+
+    * {
         box-sizing: border-box;
-      }
-      #split {
+    }
+
+    #split {
         display: flex;
         width: 100vw;
         height: 100vh;
         overflow: hidden;
-      }
-      #editor {
+    }
+
+    #editor {
         resize: horizontal;
         flex-grow: 0;
         flex-shrink: 0;
@@ -149,15 +311,73 @@ async function decompress(b64encoded) {
         color: white;
         font-family: monospace;
         max-width: 80%;
-      }
-      #preview {
+    }
+
+    #preview {
         flex-grow: 1;
         flex-shrink: 1;
         border: none;
         box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.1) inset;
         overflow: hidden;
-      }
+    }
+    nav{
+        display: none;
+    }
+    input[type="radio"]{
+        position: absolute;
+        left: -500px;
+    }
+       nav>*{
+           text-decoration: none;
+            padding: 0 40px;
+            border-bottom: 4px solid transparent;
+           cursor: pointer;
+           color: white;
+        }
+       nav>*:hover{
+           background: rgba(0,0,0,0.1);
+       }
+       nav>a{
+           flex-grow: 1;
+       }
+       nav>label{
 
-    </style>
-  </body>
+            text-transform: uppercase;
+       }
+        input#see-code:checked ~ nav label[for="see-code"],
+        input#see-preview:checked ~ nav label[for="see-preview"]{
+            border-bottom-color:  yellow;
+        }
+
+    @media screen and (max-width: 800px){
+        #split{
+          height: calc(100vh - 40px);
+
+        }
+        #editor{
+            resize: none;
+            flex-grow: 1;
+            width: auto !important;
+            max-width: none;
+        }
+        nav{
+            display: flex;
+            background: #222;
+            line-height: 40px;
+            color: white;
+            font-family:sans-serif;
+            font-weight: bold;
+        }
+
+        input#see-code:checked ~ #split > #preview{
+            display: none;
+        }
+        input#see-preview:checked ~ #split >  #editor{
+            display: none;
+        }
+    }
+
+
+</style>
+</body>
 </html>
