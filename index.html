@@ -81,7 +81,6 @@ if(!window.matchMedia('(prefers-reduced-motion: reduce)')?.matches){
         div.className="shootingStar";
         const i= document.createElement("i");
         div.appendChild(i);
-        i.style.animation='shoot '+(500+Math.floor(Math.random()*1000))+'ms infinite ease-in';
         i.style.animationDelay=Math.floor(Math.random()*1000)+'ms';
         div.style.transform="rotate("+Math.random()*360+"deg)"
         document.body.prepend(div)
@@ -98,11 +97,12 @@ if(!window.matchMedia('(prefers-reduced-motion: reduce)')?.matches){
         top:50%;
         position:absolute;
         i{
-            background:white;
+            background:linear-gradient(to right, transparent, white);
             display:block;
-            width:10px;
-            height:10px;
+            width:100px;
+            height:7px;
             animation: shoot 1s infinite ease-in;
+            border-radius:3px;
         }
     }
     @keyframes shoot{
@@ -114,6 +114,7 @@ if(!window.matchMedia('(prefers-reduced-motion: reduce)')?.matches){
         }
     }
 </style>
+    
     </textarea>
     <iframe aria-label="Code preview" srcdoc="" id="preview"></iframe>
 </div>
