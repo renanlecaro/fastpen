@@ -19,7 +19,7 @@
     <label for="see-code">Code</label>
     <label for="see-preview">Preview</label>
 </nav>
-<div id="split">
+<div id="split"> 
     <textarea
             autocorrect="off"
             autocapitalize="off"
@@ -27,95 +27,139 @@
             aria-label="Code editor" id="editor">
 <article id="follows">
     <h1>Welcome to fastpen</h1>
-
     <p>Edit HTML code on the left, preview it on the right</p>
     <p>Share the page address to show your work</p>
-    <p>Save your best code in your favorites</p>
-    <p>The editor is resizable</p>
-    <p>Indent code with Tab / Shift Tab</p>
-
+    <p>Save your best code in your favorites</p> 
 </article>
+<canvas id="canvas"></canvas>
 
 <style>
     body{
-overflow:hidden;
-        background:radial-gradient(#222, #000);
+        overflow:hidden; 
         height:100vh;
         display:flex;
         flex-direction:column;
         align-items:center;
         justify-content:center;
         font-family: sans-serif;
-        color:#333;
+        color:#333; 
         perspective: 800px;
-        /* This is just css, no preprocessor is needed to nest rules in modern browsers*/
-
-        article{
+    }
+    article{
             position:relative;
             z-index:1;
             background:white;
             max-width:500px;
             padding:20px;
             border-radius:4px;
-            h1{
-                text-align:center;
-                margin:0;
-            }
-        }
+    }
+    h1{
+        text-align:center;
+        margin:0;
+    }
+    canvas{
+        position:absolute;
+        left:0;
+        top:0;
     }
 </style>
 
 <script>
-if(!window.matchMedia('(prefers-reduced-motion: reduce)')?.matches){
-
     const follows = document.getElementById("follows");
+
 
     document.addEventListener('mousemove', event=>{
         const angleX=(event.clientX-window.innerWidth/2)/window.innerWidth*20;
         const angleY=(window.innerHeight/2-event.clientY)/window.innerHeight*20;
         follows.style.transform='rotateY('+angleX+'deg) rotateX('+angleY+'deg)'
     })
-
-    for(var i=0; i<200; i++){
-        const div= document.createElement("div");
-        div.className="shootingStar";
-        const i= document.createElement("i");
-        div.appendChild(i);
-        i.style.animationDelay=Math.floor(Math.random()*1000)+'ms';
-        div.style.transform="rotate("+Math.random()*360+"deg)"
-        document.body.prepend(div)
-    }
-};
-
 </script>
 
-
-<style>
-    .shootingStar {
-        transform-origin:top left;
-        left:50%;
-        top:50%;
-        position:absolute;
-        i{
-            background:linear-gradient(to right, transparent, white);
-            display:block;
-            width:100px;
-            height:7px;
-            animation: shoot 1s infinite ease-in;
-            border-radius:3px;
-        }
+<script>
+    const canvas = document.getElementById("canvas");
+    const ctx=canvas.getContext("2d",{ alpha: false });
+   
+    let maxX,maxY;
+    let points=[],
+        width=window.innerWidth,
+        height=window.innerHeight;
+    for(let i=0; i<50;i++){
+        points.push({
+            x:Math.random()*width,
+            y:Math.random()*height,
+            sx:(Math.random()-0.5)*10,
+            sy:(Math.random()-0.5)*10
+        }) 
     }
-    @keyframes shoot{
-        0%{
-            transform:scale(20%);
-        }
-        100%{
-            transform:translate(200vw, 0);
-        }
-    }
-</style>
 
-    </textarea>
+    function resetCanvasSize(){
+
+        width=window.innerWidth;
+        height=window.innerHeight;
+        canvas.width=width;
+        canvas.height=height;
+        ctx.fillStyle="#fff"
+        ctx.rect(0, 0, width, height);
+        ctx.fill(); 
+        
+    }
+    resetCanvasSize()
+    window.addEventListener("resize", resetCanvasSize);
+
+    let frame=0;
+    function drawLines(){ 
+        frame++ 
+
+        ctx.fillStyle='rgba(255,255,255,0.01)'
+        ctx.fillRect(0,0,width,height)
+
+        ctx.lineWidth=40;
+        ctx.lineCap = "round";
+
+        points.forEach((point,i)=>{
+            point.sy+=0.05
+            point.x+=point.sx
+            point.y+=point.sy
+
+            if(point.x<0){
+                point.x=0
+                point.sx*=-1
+            }
+            if(point.y<0){
+                point.y=0
+                point.sy*=-1
+            }
+            if(point.x>width){
+                point.x=width
+                point.sx*=-1
+            }
+            if(point.y>height){
+                point.y=height
+                point.sy*=-1
+            }
+
+ 
+            ctx.strokeStyle =`hsl(${(i*6524+frame/10)%360},100%,80%)` 
+            ctx.beginPath(); 
+            ctx.moveTo(point.x, point.y); 
+            ctx.lineTo(point.x+point.sx, point.y+point.sy); 
+            ctx.stroke(); 
+  
+        })
+
+        requestAnimationFrame(drawLines);
+    }
+
+    drawLines();
+</script>
+
+    
+        
+        
+        
+   
+    
+    </textarea> 
     <iframe aria-label="Code preview" srcdoc="" id="preview"></iframe>
 </div>
 <script>
@@ -267,6 +311,19 @@ if(!window.matchMedia('(prefers-reduced-motion: reduce)')?.matches){
                 textarea.value = lines.join('\n')
                 textarea.selectionStart = LineAndOffsetToOffset(lines, selection[0].line, selection[0].offset)
                 textarea.selectionEnd = LineAndOffsetToOffset(lines, selection[1].line, selection[1].offset)
+            }
+            if(e.key==='Enter'){
+                const {selectionStart, selectionEnd, value}= textarea
+
+                const linesBeforeCursor=value.slice(0,selectionStart).split('\n')
+                const lastLine=linesBeforeCursor[linesBeforeCursor.length-1]
+                const indentation=lastLine.match(/^\s+/)?.[0] || ''
+                
+                textarea.value=value.slice(0,selectionStart)+'\n'+indentation+value.slice(selectionEnd)
+                textarea.selectionStart=selectionStart+1+indentation.length
+                textarea.selectionEnd=textarea.selectionStart
+
+                e.preventDefault()
             }
         })
     }
