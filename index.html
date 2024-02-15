@@ -204,50 +204,43 @@
         // Create a compressed stream.
         const compressedStream = stream.pipeThrough(
             new CompressionStream("gzip")
-        );
-
-        // Read all the bytes from this stream.
-        const chunks = [];
-        for await (const chunk of compressedStream) {
-            chunks.push(chunk);
-        }
-
-        const u8 = await concatUint8Arrays(chunks);
+        )
+        const u8=await streamToBuffer(compressedStream)
         var b64encoded = btoa(String.fromCharCode.apply(null, u8));
 
         return b64encoded
 
     }
 
+    function streamToBuffer(stream) {
+        const ints = [];
+        const reader=stream.getReader()
+        function readNextChunk() {
+            return reader.read().then(({ done, value }) => {  
+              if (done) {  
+                return new Uint8Array(ints) 
+              }else{
+                  ints.push(...value)
+                  return readNextChunk()
+              }
 
-    async function concatUint8Arrays(uint8arrays) {
-        const blob = new Blob(uint8arrays);
-        const buffer = await blob.arrayBuffer();
-        return new Uint8Array(buffer);
+            })
+        }
+        return readNextChunk() 
+ 
     }
 
+ 
     async function decompress(b64encoded) {
         const compressedBytes = new Uint8Array(atob(b64encoded).split("").map(function (c) {
             return c.charCodeAt(0);
         }));
-
-        // Convert the bytes to a stream.
-        const stream = new Blob([compressedBytes]).stream();
-
-        // Create a decompressed stream.
+        const stream = new Blob([compressedBytes]).stream(); 
         const decompressedStream = stream.pipeThrough(
             new DecompressionStream("gzip")
         );
-
-        // Read all the bytes from this stream.
-        const chunks = [];
-        for await (const chunk of decompressedStream) {
-            chunks.push(chunk);
-        }
-        const stringBytes = await concatUint8Arrays(chunks);
-
-        // Convert the bytes to a string.
-        return new TextDecoder().decode(stringBytes);
+        const u8=await streamToBuffer(decompressedStream) 
+        return new TextDecoder().decode(u8.buffer);
     }
 
     if (window.location.hash) {
